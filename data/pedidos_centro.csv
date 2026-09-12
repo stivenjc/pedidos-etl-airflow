@@ -1,0 +1,8 @@
+id_pedido,fecha,producto,cantidad,precio_unitario,tienda
+2001,2026-08-25,Impresora multifuncional,1,520000,centro
+2002,2026-08-25,Resma de papel,10,12000,centro
+2003,2026-08-25,Tóner negro,2,95000,centro
+2004,2026-08-26,Escritorio ajustable,1,1250000,centro
+2005,2026-08-26,Lámpara de escritorio,3,68000,centro
+2006,2026-08-27,Webcam HD,2,110000,centro
+2007,2026-08-27,Micrófono USB,1,175000,centro

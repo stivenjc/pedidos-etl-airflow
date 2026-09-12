@@ -1,0 +1,8 @@
+id_pedido,fecha,producto,cantidad,precio_unitario,tienda
+1001,2026-08-25,Laptop HP 15,1,2450000,norte
+1002,2026-08-25,Mouse inalámbrico,3,45000,norte
+1003,2026-08-25,Teclado mecánico,2,180000,norte
+1004,2026-08-26,Monitor 24 pulgadas,1,650000,norte
+1005,2026-08-26,Audífonos Bluetooth,4,95000,norte
+1006,2026-08-26,Cargador USB-C,5,35000,norte
+1007,2026-08-27,Silla ergonómica,1,890000,norte
