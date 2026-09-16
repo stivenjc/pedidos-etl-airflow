@@ -28,13 +28,22 @@ Cada paso se guarda como un archivo Parquet intermedio (versionado por fecha de 
 
 Las 3 tiendas se procesan en paralelo entre sí, ya que son completamente independientes (el fallo de una no afecta a las demás).
 
+## DAGs de Airflow
+
+Este proyecto orquesta dos flujos distintos, corriendo sobre la misma instalación de Airflow:
+
+| DAG | Qué hace |
+|---|---|
+| `dag_pedidos_granular.py` | Orquesta el pipeline de arriba: valida, limpia y carga los pedidos a Postgres. |
+| `dag_dbt_bigquery.py` | Dispara `dbt run` y `dbt test` del proyecto [pedidos-dbt-bigquery](https://github.com/stivenjc/pedidos-dbt-bigquery), autenticando el acceso a GCP mediante impersonation de una cuenta de servicio (no claves JSON, bloqueadas por política de la organización). |
+
 ## Stack técnico
 
 - **Python** — lógica de negocio (lectura, validación, limpieza)
 - **pandas** — procesamiento y transformación de datos
 - **PostgreSQL** — almacenamiento final de pedidos válidos
 - **SQLAlchemy** — conexión y manejo de transacciones con la base de datos
-- **Apache Airflow** — orquestación: tareas granulares, paralelismo, reintentos automáticos
+- **Apache Airflow** — orquestación: tareas granulares, paralelismo, reintentos automáticos, y disparo del proyecto dbt
 - **pytest** — tests automatizados cubriendo los 5 incidentes
 - **Parquet** — formato de almacenamiento intermedio entre tareas
 
@@ -55,7 +64,9 @@ Las 3 tiendas se procesan en paralelo entre sí, ya que son completamente indepe
 │       └── logger_config.py      # Configuración centralizada de logging
 ├── airflow_home/
 │   └── dags/
-│       └── dag_pedidos_granular.py
+│       ├── dag_pedidos_granular.py
+│       └── dag_dbt_bigquery.py
+├── migrar_a_star_schema.py       # Script de migración one-off a BigQuery (ver pedidos-dbt-bigquery)
 ├── tests/
 │   └── test_procesamiento.py     # Tests de los 5 incidentes
 ├── logs/
@@ -114,7 +125,7 @@ export AIRFLOW_HOME=$(pwd)/airflow_home
 airflow standalone
 ```
 
-Abrir `http://localhost:8080`, activar el DAG `pipeline_pedidos_granular` y dispararlo manualmente o dejar que corra en su horario diario.
+Abrir `http://localhost:8080`, activar los DAGs `pipeline_pedidos_granular` y `pedidos_dbt_bigquery`, y dispararlos manualmente o dejar que corran en su horario diario.
 
 ### 5. Correr los tests
 
@@ -130,10 +141,11 @@ pytest tests/test_procesamiento.py -v
 - **`ON CONFLICT DO NOTHING` + clave primaria**: hace que reenviar el mismo archivo sea seguro por diseño, sin necesitar lógica de deduplicación adicional en el código.
 - **Excepciones específicas por tipo** (`FileNotFoundError`, `ValueError`, `ConnectionError`, `Exception` genérico al final): permite mensajes de error claros y accionables, en vez de un log genérico de "algo falló".
 - **Archivos intermedios en Parquet entre tareas de Airflow**: permite que un reintento de una tarea específica (ej. la carga a base de datos) no repita el trabajo de tareas anteriores que ya se completaron con éxito.
+- **Un solo Airflow para ambos DAGs**: en vez de instalar un orquestador separado para cada proyecto, se reusa la misma instalación de Airflow para orquestar tanto el pipeline local como el disparo de dbt sobre BigQuery.
 
 ## Próximos pasos (no implementados aún)
 
 - Containerización con Docker
 - Alertas activas (email/Slack) cuando una tarea falla
 - Uso de Sensors de Airflow para el caso de archivos que llegan tarde
-- CI/CD para correr los tests automáticamente en cada cambio
+- CI/CD para correr los tests de pytest automáticamente en cada cambio (el proyecto [pedidos-dbt-bigquery](https://github.com/stivenjc/pedidos-dbt-bigquery) ya tiene su propio CI implementado con GitHub Actions)
